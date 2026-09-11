@@ -2149,7 +2149,10 @@ mod_last(_Config) ->
     P = [modules, mod_last],
     ?cfgh(P ++ [backend], mnesia, T(#{<<"backend">> => <<"mnesia">>})),
     ?cfgh(P ++ [backend], rdbms, T(#{<<"backend">> => <<"rdbms">>})),
-    ?errh(T(#{<<"backend">> => <<"frontend">>})).
+    ?errh(T(#{<<"backend">> => <<"frontend">>})),
+    ?cfgh(P ++ [privacy], roster, T(#{<<"privacy">> => <<"roster">>})),
+    ?cfgh(P ++ [privacy], local, T(#{<<"privacy">> => <<"local">>})),
+    ?errh(T(#{<<"privacy">> => <<"everyone">>})).
 
 mod_mam(_Config) ->
     check_module_defaults(mod_mam),

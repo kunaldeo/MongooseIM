@@ -491,7 +491,7 @@ all_modules() ->
                             #{name => <<"friendly-spirits">>,
                               urls => [<<"spirit1@localhost">>, <<"spirit2@localhost">>],
                               modules => [mod_muc, mod_disco]}]}),
-      mod_last => #{backend => mnesia, iqdisc => {queues, 10}},
+      mod_last => #{backend => mnesia, iqdisc => {queues, 10}, privacy => roster},
       mod_shared_roster_ldap =>
           mod_config(mod_shared_roster_ldap,
                      #{base => <<"ou=Users,dc=ejd,dc=com">>,
@@ -888,7 +888,7 @@ default_mod_config(mod_inbox) ->
 default_mod_config(mod_keystore) ->
     #{ram_key_size => 2048, keys => #{}};
 default_mod_config(mod_last) ->
-    #{iqdisc => one_queue, backend => mnesia};
+    #{iqdisc => one_queue, backend => mnesia, privacy => roster};
 default_mod_config(mod_mam_pm) ->
     maps:merge(common_mam_config(), default_config([modules, mod_mam, pm]));
 default_mod_config(mod_mam) ->

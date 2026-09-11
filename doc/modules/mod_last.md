@@ -60,3 +60,17 @@ Backend in the action name can be either `rdbms` or `mnesia`.
     | `[HostType, mod_last_Backend, set_last_info, time]` | histogram | Time spent storing a timestamp in the database. |
     | `[HostType, mod_last_Backend, session_cleanup, count]` | spiral | A session is cleaned up from the database. |
     | `[HostType, mod_last_Backend, session_cleanup, time]` | histogram | Time spent cleaning up a session from the database. |
+### `modules.mod_last.privacy`
+* **Syntax:** string, one of `"roster"`, `"local"`
+* **Default:** `"roster"`
+* **Example:** `privacy = "local"`
+
+Who may ask for another user's last activity:
+
+* `roster` - only a user with a `both` or `from` subscription, as XEP-0012 assumes.
+* `local` - any authenticated user of the same host type. This suits deployments that
+  run no roster at all and decide visibility elsewhere.
+
+The privacy list and blocking check is applied in both cases, so a blocked user still
+learns nothing.
+
