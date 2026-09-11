@@ -245,7 +245,7 @@ mysql_on_conflict(Table, UpdateFields, _, IncrementalField) ->
     FieldsWithPlaceHolders = [mysql_fields_with_placeholders(TableName, Update, IncrementalField)
                               || Update <- UpdateFields],
     IncrUpdates = join(FieldsWithPlaceHolders, ", "),
-    [" AS alias ON DUPLICATE KEY UPDATE ", IncrUpdates].
+    [" ON DUPLICATE KEY UPDATE ", IncrUpdates].
 
 mysql_fields_with_placeholders(TableName, UpdateField, IncrementalField) ->
     Alternatives = case UpdateField of
@@ -254,7 +254,10 @@ mysql_fields_with_placeholders(TableName, UpdateField, IncrementalField) ->
                        Column ->
                            ["? , ", TableName, ".", Column, ")"]
                    end,
-    [ Column, " = IF(", TableName, ".", IncrementalField, " < alias.", IncrementalField, ", "
+    %% VALUES(col) rather than MySQL 8.0.19's row alias: TiDB v8.5 rejects
+    %% `VALUES (...) AS alias` outright, and VALUES() means the same thing here —
+    %% the only use of the alias is reading the incoming row's incremental field.
+    [ Column, " = IF(", TableName, ".", IncrementalField, " < VALUES(", IncrementalField, "), "
       | Alternatives].
 
 pgsql_on_conflict([], UniqueKeyFields) ->
