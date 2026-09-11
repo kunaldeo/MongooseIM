@@ -111,10 +111,13 @@ config_spec() ->
     #section{
        items = #{<<"iqdisc">> => mongoose_config_spec:iqdisc(),
                  <<"backend">> => #option{type = atom,
-                                          validate = {module, mod_last}}
+                                          validate = {module, mod_last}},
+                 <<"privacy">> => #option{type = atom,
+                                          validate = {enum, [roster, local]}}
                 },
        defaults = #{<<"iqdisc">> => one_queue,
-                    <<"backend">> => mnesia
+                    <<"backend">> => mnesia,
+                    <<"privacy">> => roster
                    }
       }.
 
@@ -167,11 +170,24 @@ process_sm_iq(Acc, From, To, #iq{type = get, sub_el = SubEl} = IQ, _Extra) ->
     end.
 
 can_respond(HostType, From, To) ->
-    {Subscription, _Groups} = mongoose_hooks:roster_get_jid_info(HostType, To, From),
-    MutualSubscription = Subscription =:= both,
-    RequesterSubscribedToTarget = Subscription =:= from,
-    QueryingSameUsersLast = jid:are_bare_equal(From, To),
-    MutualSubscription or RequesterSubscribedToTarget or QueryingSameUsersLast.
+    case jid:are_bare_equal(From, To) of
+        true -> true;
+        false -> can_respond_to_other(HostType, From, To)
+    end.
+
+%% TellMe fork patch #1: `privacy = local` lets any authenticated user of the same
+%% host type ask for last activity. Stock MongooseIM answers `forbidden` without a
+%% roster subscription, and we run no roster at all (see D-151). The privacy and
+%% blocking check in process_sm_iq/5 is untouched, so a blocked asker still gets
+%% nothing.
+can_respond_to_other(HostType, From, To) ->
+    case gen_mod:get_module_opt(HostType, ?MODULE, privacy) of
+        local ->
+            mongoose_domain_api:get_host_type(From#jid.lserver) =:= {ok, HostType};
+        roster ->
+            {Subscription, _Groups} = mongoose_hooks:roster_get_jid_info(HostType, To, From),
+            Subscription =:= both orelse Subscription =:= from
+    end.
 
 -spec make_response(mongooseim:host_type(), jlib:iq(), SubEl :: 'undefined' | [exml:element()],
                     jid:jid(), allow | deny) -> jlib:iq().
